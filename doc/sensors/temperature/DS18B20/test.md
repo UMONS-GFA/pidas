@@ -3,9 +3,16 @@ http://www.framboise314.fr/mesure-de-temperature-1-wire-ds18b20-avec-le-raspberr
 
 ### Hardware connections
 
-![DS1820 pinout](https://github.com/UMONS-GFA/pidas/blob/master/doc/sensors/temperature/DS18B20/DS18B20-pinout.jpg)
+DS18B20 pinout
 
-![Raspberry Pi Cobler pinout](https://github.com/UMONS-GFA/pidas/blob/master/doc/sensors/temperature/DS18B20/schema_connexion.jpg)
+![](https://github.com/UMONS-GFA/pidas/blob/master/doc/sensors/temperature/DS18B20/DS18B20-pinout.jpg)
+
+Raspberry Pi Cobbler output
+
+![](https://github.com/UMONS-GFA/pidas/blob/master/doc/sensors/temperature/DS18B20/schema_connexion.jpg)
+
+Breadboard connection
+![] (https://github.com/UMONS-GFA/pidas/blob/master/doc/sensors/temperature/DS18B20/connection-breadboard.jpg)
 
 ### Raspberry configuration
 
