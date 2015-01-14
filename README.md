@@ -13,6 +13,11 @@ w1-gpio
 w1-therm   
 ```
 
+Restart the Pi and check if modules are loaded.
+```
+lsmod | grep w1
+```
+
 ### Set static ip
 
 Edit /etc/network/interfaces
