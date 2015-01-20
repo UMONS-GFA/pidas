@@ -2,6 +2,10 @@
 
 Data Acquisition System based on Raspberry Pi
 
+### Requirements
+
+* Python 3
+
 ## Raspberry Pi configuration 
 
 ### Load required modules at startup 
