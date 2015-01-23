@@ -6,8 +6,7 @@ import time
 import subprocess
 
 
-base_dir = '/sys/bus/w1/devices/'
-device_folder = glob.glob(base_dir + '28*')
+devices_folder = glob.glob('/sys/bus/w1/devices/28*')
 
 
 def initialize_dtm(file):
@@ -30,7 +29,7 @@ def read_temp_raw(device_file):
 
 def read_temp():
     temps = []
-    for device in device_folder:
+    for device in devices_folder:
         device_file = device + '/w1_slave'
         lines = read_temp_raw(device_file)
         while lines[0].strip()[-3:] != 'YES':
