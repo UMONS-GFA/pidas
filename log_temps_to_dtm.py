@@ -57,12 +57,12 @@ def save_temp(file):
 
 if __name__ == '__main__':
     base_dir = os.curdir
-    filename = str(time.strftime("%Y-%m-%d", time.gmtime()) + ".DTM")
-    if not os.path.isfile(base_dir + "/" + filename):
-        initialize_dtm(filename)
     try:
         while True:
-            print(read_temp())
+            filename = str(time.strftime("%Y-%m-%d", time.gmtime()) + ".DTM")
+            if not os.path.isfile(base_dir + "/" + filename):
+                initialize_dtm(filename)
+            #print(read_temp())
             save_temp(filename)
             time.sleep(1)
     except KeyboardInterrupt:
