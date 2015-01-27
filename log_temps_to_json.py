@@ -28,9 +28,9 @@ def read_temp(device_file=''):
         return None
 
 
-def save_temps():
+def get_temp_measures():
     device_list = glob.glob('/sys/bus/w1/devices/28-*')
-    print(device_list)
+    temp_measures = []
     for device in device_list:
         temps = []
         cr_time = []
@@ -38,9 +38,15 @@ def save_temps():
         device_file = str(device) + '/w1_slave'
         cr_time.append(str(int(time.time())))
         temps.append(read_temp(device_file))
-        measure = TempMeasure(sensor_id, temps, cr_time)
-        with open('data.json', 'a', encoding='utf-8') as f:
-            json.dump(measure.to_json(), fp=f, indent=4)
+        temp_measure = TempMeasure(sensor_id, temps, cr_time)
+        temp_measures.append(temp_measure.to_json())
+    return temp_measures
+
+
+def save_to_json(temps):
+    with open('data.json', 'a', encoding='utf-8') as f:
+        f.write(json.dumps(temps, indent=4))
 
 if __name__ == "__main__":
-    save_temps()
+    temp_measures = get_temp_measures()
+    save_to_json(temp_measures)
