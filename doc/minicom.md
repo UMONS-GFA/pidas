@@ -1,4 +1,4 @@
-### Instalation
+### Installation
 ```apt-get install minicom```
   
 ### Configure
