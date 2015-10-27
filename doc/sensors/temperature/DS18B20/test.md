@@ -12,6 +12,9 @@ Raspberry Pi Cobbler output
 ![](https://github.com/UMONS-GFA/pidas/blob/master/doc/sensors/temperature/DS18B20/schema_connexion.jpg)
 
 Breadboard connection
+
+Use a pull-up resistor (4,7k is fine)  
+
 ![] (https://github.com/UMONS-GFA/pidas/blob/master/doc/sensors/temperature/DS18B20/connection-breadboard.jpg)
 
 ### Raspberry configuration
