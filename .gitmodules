@@ -1,0 +1,3 @@
+[submodule "raspbian-ua-netinst"]
+	path = raspbian-ua-netinst
+	url = https://github.com/debian-pi/raspbian-ua-netinst.git
