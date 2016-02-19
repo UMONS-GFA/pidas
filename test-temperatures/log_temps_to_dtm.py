@@ -40,6 +40,7 @@ def read_temp():
             temp_string = lines[1][equals_pos+2:]
             temp_c = float(temp_string) / 1000.0
             temps.append(temp_c)
+        print(str(temps))
     return temps
 
 
@@ -58,13 +59,12 @@ def save_temp(file):
 if __name__ == '__main__':
     base_dir = os.curdir
     try:
-        while True:
-            filename = str(time.strftime("%Y-%m-%d", time.gmtime()) + ".DTM")
-            if not os.path.isfile(base_dir + "/" + filename):
-                initialize_dtm(filename)
-            #print(read_temp())
-            save_temp(filename)
-            time.sleep(1)
+        start = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+        print(start)
+        read_temp()
+        #time.sleep(1)
+        stop = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+        print(stop)
     except KeyboardInterrupt:
         print(' Exiting measures')
         sys.exit()
