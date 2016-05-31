@@ -1,10 +1,31 @@
 # pidas
 
-Data Acquisition System based on Raspberry Pi
+Raspberry Pi configuration to interact with Data Acquisition Systems
 
-### Requirements
+## Installation 
 
-* Python 3
+[Download](https://github.com/debian-pi/raspbian-ua-netinst/releases) last version of debian netinstall
+
+Copy img file to sd card
+
+```sudo dd bs=4m if=PATH_TO_IMG of=/dev/DEVNAME```
+
+Copy *installer-config.txt* to sd card
+
+Insert the sd card into the raspberry pi and make sure to have network connection
+
+Power up the Pi
+
+Wait during netinstall
+
+## Usage
+
+Warning:  The layout is QWERTY
+
+Login: root  
+
+Password: raspbian 
+
 
 ## Raspberry Pi configuration 
 
