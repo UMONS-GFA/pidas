@@ -48,8 +48,10 @@ lsmod | grep w1
 Edit /etc/network/interfaces
 
 ```
+auto lo
 iface lo inet loopback
-#iface eth0 inet dhcp
+
+auto eth0
 iface eth0 inet static
    address X.X.X.X
    netmask 255.255.255.0
