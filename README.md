@@ -27,7 +27,38 @@ Login: root
 Password: raspbian 
 
 
-## Raspberry Pi configuration 
+## Configuration 
+
+### Static ip
+
+Edit /etc/network/interfaces
+
+```
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+   address X.X.X.X
+   netmask 255.255.255.0
+   network X.X.X.0
+   gateway X.X.X.1
+```
+
+### Change computer name
+
+``nano /etc/hosts``
+        
+```
+127.0.0.1     localhost
+127.0.1.1     COMPUTER_NAME
+```
+
+`` nano /etc/hostname ``
+
+```
+COMPUTER_NAME
+```
 
 ### Load required modules at startup 
 
@@ -45,16 +76,4 @@ lsmod | grep w1
 
 ### Set static ip
 
-Edit /etc/network/interfaces
 
-```
-auto lo
-iface lo inet loopback
-
-auto eth0
-iface eth0 inet static
-   address X.X.X.X
-   netmask 255.255.255.0
-   network X.X.X.0
-   gateway X.X.X.1
-```
