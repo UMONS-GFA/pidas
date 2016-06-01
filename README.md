@@ -74,6 +74,4 @@ Restart the Pi and check if modules are loaded.
 lsmod | grep w1
 ```
 
-### Set static ip
-
 
