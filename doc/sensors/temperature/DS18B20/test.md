@@ -19,6 +19,18 @@ Use a pull-up resistor (4,7k is fine)
 
 ### Raspberry configuration
 
+Add 1-Wire support
+
+    sudo nano /boot/config.txt
+
+Add at the botttom 
+
+    dtoverlay=w1-gpio
+    
+Reboot
+
+    sudo reboot
+    
 Activate the kernel modules
 ```
 sudo modprobe w1-gpio
