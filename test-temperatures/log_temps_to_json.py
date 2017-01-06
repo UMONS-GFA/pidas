@@ -47,7 +47,8 @@ def get_temp_measures():
 
 def save_to_json(temps):
     with open('data.json', 'a', encoding='utf-8') as f:
-        f.write(json.dumps(temps, indent=4))
+        #f.write(json.dumps(temps, indent=4))
+        f.write(json.dumps(temps))
 
 if __name__ == "__main__":
     while 1:
