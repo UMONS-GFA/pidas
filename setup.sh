@@ -2,6 +2,7 @@
 
 echo "Creating user pi…"
 useradd pi -m -p raspberry
+usermod -aG dialout pi
 
 
 echo "Getting usb ids for Arduino…"
