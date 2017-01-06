@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 import time
 import glob
@@ -49,5 +50,11 @@ def save_to_json(temps):
         f.write(json.dumps(temps, indent=4))
 
 if __name__ == "__main__":
-    temp_measures = get_temp_measures()
-    save_to_json(temp_measures)
+    while 1:
+        try:
+            temp_measures = get_temp_measures()
+            save_to_json(temp_measures)
+            time.sleep(60)
+        except KeyboardInterrupt:
+            print(' Exiting measures')
+            sys.exit()
