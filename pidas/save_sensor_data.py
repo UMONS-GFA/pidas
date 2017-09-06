@@ -2,7 +2,7 @@ import time
 import datetime
 import logging
 import csv
-from pandas import DataFrame, read_csv, to_datetime
+from pandas import read_csv, to_datetime
 from influxdb import DataFrameClient
 from os import path, makedirs
 from threading import Thread, RLock
@@ -31,7 +31,7 @@ class ThreadLocalSave(Thread):
     def run(self):
         while 1:
             try:
-                if SIMULATION_MODE ==1:
+                if SIMULATION_MODE == 1:
                     for sensor in self.sensors:
                         timestamp = str(int(time.time()))
                         lock.acquire()
@@ -69,7 +69,7 @@ class ThreadRemoteSave(Thread):
         while 1:
             lock.acquire()
             df = read_csv(self.csv_path)
-            df['valueTime'] = to_datetime(df['timestamp'], unit='s', utc=True)
+            df['valueTime'] = to_datetime(df['timestamp'], utc=True)
             df.set_index(['valueTime'], inplace=True)
             lock.release()
             last_measurement = self.client.query('select * from temperatures order by desc limit 1;')
@@ -91,7 +91,7 @@ def generate_temp_sensor(nb_sensor=7):
     logging.info("Generating sensors")
     for i in range(nb_sensor):
         s = FakeTempSensor()
-        s.set_name('T'+ str(i))
+        s.set_name('T' + str(i))
         sensors.append(s)
         time.sleep(1)  # mandatory otherwise each sensor will have the same name
         logging.info(".")
