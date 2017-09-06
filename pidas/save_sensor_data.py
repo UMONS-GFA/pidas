@@ -2,7 +2,7 @@ import time
 import datetime
 import logging
 import csv
-import pandas as pd
+from pandas import DataFrame, read_csv, to_datetime
 from influxdb import DataFrameClient
 from os import path, makedirs
 from threading import Thread, RLock
@@ -12,7 +12,7 @@ from pidas.settings import PIDAS_DIR, DATA_FILE, CSV_HEADER, DATABASE
 lock = RLock()
 
 
-SIMULATION_MODE = 1
+SIMULATION_MODE = 0
 
 if SIMULATION_MODE == 1:
     from pidas.fake_sensor import FakeTempSensor
@@ -68,8 +68,8 @@ class ThreadRemoteSave(Thread):
 
         while 1:
             lock.acquire()
-            df = pd.read_csv(self.csv_path)
-            df['valueTime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)
+            df = read_csv(self.csv_path)
+            df['valueTime'] = to_datetime(df['timestamp'], unit='s', utc=True)
             df.set_index(['valueTime'], inplace=True)
             lock.release()
             last_measurement = self.client.query('select * from temperatures order by desc limit 1;')
@@ -79,26 +79,23 @@ class ThreadRemoteSave(Thread):
                 last_date = last_measurement["temperatures"].index.to_pydatetime()[0]
             df2 = df[df.index > last_date]
             if df2.size > 0:
-                print("df2:")
-                #print(df2)
-                print("Sending data to remote database…")
+                logging.info("Sending data to remote database…")
                 for sensorName in df2['sensorName'].unique():
                     sensor_data = df2.query("sensorName=='" + sensorName + "'")  # df data for one sensor
-                    print(sensor_data)
                     self.client.write_points(sensor_data, 'temperatures', {'sensorName': sensorName})  # tag data with sensorID
                 time.sleep(self.sleep_time)
 
 
 def generate_temp_sensor(nb_sensor=7):
     sensors = []
-    print("Generating sensors")
+    logging.info("Generating sensors")
     for i in range(nb_sensor):
         s = FakeTempSensor()
         s.set_name('T'+ str(i))
         sensors.append(s)
         time.sleep(1)  # mandatory otherwise each sensor will have the same name
-        print(".")
-    print("Sensors generated")
+        logging.info(".")
+    logging.info("Sensors generated")
     return sensors
 
 
@@ -135,11 +132,7 @@ def main():
                 s.id = result
                 sensors.append(s)
     else:
-        last_measurement = client.query('select * from temperatures order by desc limit 1;')
-        if not last_measurement:
-            "Serie is empty, creating new sensors…"
         sensors = W1ThermSensor.get_available_sensors()
-        df = pd.read_csv(file_path)
 
     thread_local_save = ThreadLocalSave(file_path=file_path, sensors=sensors)
     thread_remote_save = ThreadRemoteSave(client, file_path=file_path)
