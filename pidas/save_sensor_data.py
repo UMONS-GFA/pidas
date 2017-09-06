@@ -138,6 +138,9 @@ def main():
     thread_remote_save = ThreadRemoteSave(client, file_path=file_path)
     thread_local_save.start()
     thread_remote_save.start()
+    # wait until threads terminates
+    thread_local_save.join()
+    thread_remote_save.join()
 
 
 if __name__ == "__main__":
