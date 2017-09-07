@@ -11,6 +11,8 @@ Welcome to Pidas's documentation!
    :caption: Contents:
 
    pi_configuration
+   start
+   automatization
 
 
 
