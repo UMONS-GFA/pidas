@@ -106,3 +106,4 @@ Make it executable::
 Connect your arduino board and launch the script::
 
     sh get_arduino_id.sh
+
