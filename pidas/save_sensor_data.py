@@ -7,7 +7,7 @@ from influxdb import DataFrameClient
 from os import path, makedirs
 from threading import Thread, RLock
 
-from pidas.settings import PIDAS_DIR, DATA_FILE, CSV_HEADER, DATABASE
+from pidas.settings import PIDAS_DIR, DATA_FILE, CSV_HEADER, DATABASE, NB_SENSOR
 
 lock = RLock()
 
@@ -15,7 +15,7 @@ lock = RLock()
 SIMULATION_MODE = 0
 
 if SIMULATION_MODE == 1:
-    from pidas.fake_sensor import FakeTempSensor
+    from pidas.fake_sensor import FakeTempSensor, generate_temp_sensor
 else:
     from w1thermsensor import W1ThermSensor
 
@@ -82,21 +82,9 @@ class ThreadRemoteSave(Thread):
                 logging.info("Sending data to remote database…")
                 for sensorName in df2['sensorName'].unique():
                     sensor_data = df2.query("sensorName=='" + sensorName + "'")  # df data for one sensor
-                    self.client.write_points(sensor_data, 'temperatures', {'sensorName': sensorName})  # tag data with sensorID
+                    self.client.write_points(sensor_data, 'temperatures',
+                                             {'sensorName': sensorName})  # tag data with sensorID
                 time.sleep(self.sleep_time)
-
-
-def generate_temp_sensor(nb_sensor=7):
-    sensors = []
-    logging.info("Generating sensors")
-    for i in range(nb_sensor):
-        s = FakeTempSensor()
-        s.set_name('T' + str(i))
-        sensors.append(s)
-        time.sleep(1)  # mandatory otherwise each sensor will have the same name
-        logging.info(".")
-    logging.info("Sensors generated")
-    return sensors
 
 
 def main():
@@ -121,8 +109,9 @@ def main():
     if SIMULATION_MODE == 1:
         last_measurement = client.query('select * from temperatures order by desc limit 1;')
         if not last_measurement:
-            "Serie is empty, creating new sensors…"
-            sensors = generate_temp_sensor()
+            logging.info("Serie is empty, creating new sensors…")
+            sensors = generate_temp_sensor(NB_SENSOR)
+            logging.info("Sensors generated")
         else:
             "Getting sensors from database…"
             result_set = client.query('select distinct(sensorID) as sensorID from temperatures ')

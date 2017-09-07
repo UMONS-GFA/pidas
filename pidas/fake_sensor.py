@@ -1,6 +1,7 @@
+import random
+import time
 import datetime
 from calendar import timegm
-import random
 
 
 class Fake1WireSensor:
@@ -25,9 +26,20 @@ class FakeTempSensor(Fake1WireSensor):
         return self.temperature
 
 
+def generate_temp_sensor(nb_sensor=2):
+    sensors = []
+    for i in range(nb_sensor):
+        s = FakeTempSensor()
+        s.set_name('T' + str(i))
+        sensors.append(s)
+        time.sleep(1)  # mandatory otherwise each sensor will have the same name
+    return sensors
+
+
 def main():
-    s = FakeTempSensor()
-    print("Temperature of {:s} is {:.3f}".format(s.id, s.get_temperature()))
+    sensors = generate_temp_sensor()
+    for s in sensors:
+        print("Temperature of {:s} is {:.3f}".format(s.id, s.get_temperature()))
 
 
 if __name__ == '__main__':
