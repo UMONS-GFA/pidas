@@ -2,8 +2,9 @@ import time
 import datetime
 import logging
 import csv
+import requests.exceptions
 from pandas import read_csv, to_datetime
-from influxdb import DataFrameClient
+from influxdb import DataFrameClient, exceptions
 from os import path, makedirs
 from threading import Thread, RLock
 
@@ -72,19 +73,30 @@ class ThreadRemoteSave(Thread):
             df['valueTime'] = to_datetime(df['timestamp'], utc=True)
             df.set_index(['valueTime'], inplace=True)
             lock.release()
-            last_measurement = self.client.query('select * from temperatures order by desc limit 1;')
-            if not last_measurement:
-                last_date = datetime.datetime(1970, 1, 1, 0, 0, 0).replace(tzinfo=datetime.timezone.utc)
-            else:
-                last_date = last_measurement["temperatures"].index.to_pydatetime()[0]
-            df2 = df[df.index > last_date]
-            if df2.size > 0:
-                logging.info("Sending data to remote database…")
-                for sensorName in df2['sensorName'].unique():
-                    sensor_data = df2.query("sensorName=='" + sensorName + "'")  # df data for one sensor
-                    self.client.write_points(sensor_data, 'temperatures',
-                                             {'sensorName': sensorName})  # tag data with sensorID
-                time.sleep(self.sleep_time)
+            try:
+                last_measurement = self.client.query('select * from temperatures order by desc limit 1;')
+                if not last_measurement:
+                    last_date = datetime.datetime(1970, 1, 1, 0, 0, 0).replace(tzinfo=datetime.timezone.utc)
+                else:
+                    last_date = last_measurement["temperatures"].index.to_pydatetime()[0]
+                df2 = df[df.index > last_date]
+                if df2.size > 0:
+                    try:
+                        logging.info("Sending data to remote database…")
+                        for sensorName in df2['sensorName'].unique():
+                            sensor_data = df2.query("sensorName=='" + sensorName + "'")  # df data for one sensor
+                            self.client.write_points(sensor_data, 'temperatures',
+                                                     {'sensorName': sensorName})  # tag data with sensorID
+                    except requests.exceptions.ConnectionError:
+                        logging.error("Database connection lost !")
+
+                    except exceptions.InfluxDBClientError as e:
+                        logging.error("{}".format(e.content))
+            except requests.exceptions.ConnectionError:
+                logging.error("Database connection lost !")
+            except exceptions.InfluxDBClientError as e:
+                logging.error("{}".format(e.content))
+            time.sleep(self.sleep_time)
 
 
 def main():
@@ -106,20 +118,29 @@ def main():
             writer.writerow(CSV_HEADER)
     client = DataFrameClient(DATABASE['HOST'], DATABASE['PORT'], DATABASE['USER'], DATABASE['PASSWORD'],
                              DATABASE['NAME'])
+    sensors = []
     if SIMULATION_MODE == 1:
-        last_measurement = client.query('select * from temperatures order by desc limit 1;')
-        if not last_measurement:
-            logging.info("Serie is empty, creating new sensors…")
-            sensors = generate_temp_sensor(NB_SENSOR)
-            logging.info("Sensors generated")
-        else:
-            "Getting sensors from database…"
-            result_set = client.query('select distinct(sensorID) as sensorID from temperatures ')
-            sensors = []
-            for result in result_set['temperatures'].sensorID:
-                s = FakeTempSensor()
-                s.id = result
-                sensors.append(s)
+        try:
+            last_measurement = client.query('select * from temperatures order by desc limit 1;')
+            if not last_measurement:
+                logging.info("Serie is empty, creating new sensors…")
+                sensors = generate_temp_sensor(NB_SENSOR)
+                logging.info("Sensors generated")
+            else:
+                try:
+                    "Getting sensors from database…"
+                    result_set = client.query('select distinct(sensorID) as sensorID from temperatures ')
+
+                    for result in result_set['temperatures'].sensorID:
+                        s = FakeTempSensor()
+                        s.id = result
+                        sensors.append(s)
+                except requests.exceptions.ConnectionError:
+                    logging.error("Database connection lost !")
+        except requests.exceptions.ConnectionError:
+            logging.error("Database connection lost !")
+        except exceptions.InfluxDBClientError as e:
+            logging.error("{}".format(e.content))
     else:
         sensors = W1ThermSensor.get_available_sensors()
 
