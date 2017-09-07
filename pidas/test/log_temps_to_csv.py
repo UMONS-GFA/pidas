@@ -7,12 +7,13 @@ import logging
 import pandas as pd
 from os import path, makedirs
 from time import gmtime
-from pidas.settings import PIDAS_DIR, SENSOR_LIST_FILE, DATA_FILE
+from pidas.settings import PIDAS_DIR, SENSOR_LIST_FILE, DATA_FILE, CSV_HEADER
 
-csv_header = ["sensorID", "sensorName", "value", "valueTime"]
 
 def get_sensor_list(sensor_list):
+    """create a dataframe from sensor list name and position"""
     df = pd.read_csv(sensor_list)
+    print(df)
     return df
 
 
@@ -59,6 +60,7 @@ def get_temp_measures():
 
 
 if __name__ == "__main__":
+    print("Begin")
     log_path = path.join(PIDAS_DIR, 'logs')
     file_path = path.join(PIDAS_DIR, DATA_FILE)
     if not path.exists(log_path):
@@ -74,7 +76,7 @@ if __name__ == "__main__":
     if not path.exists(file_path):
         with open(file_path, "w") as output_file:
             writer = csv.writer(output_file)
-            writer.writerow(csv_header)
+            writer.writerow(CSV_HEADER)
     while 1:
         try:
             temp_measures = get_temp_measures()

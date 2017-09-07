@@ -67,6 +67,7 @@ if __name__ == '__main__':
             t = Temperature(device_file)
             t.daemon = True
             t.start()
+            t.run()
 
         q.join()
 

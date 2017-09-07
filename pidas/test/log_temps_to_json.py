@@ -1,10 +1,11 @@
-import os
 import sys
 import subprocess
 import time
 import glob
 import json
+import logging
 import pandas as pd
+from os import path, makedirs
 from pidas.measure import TempMeasure
 from pidas.settings import SENSOR_LIST_FILE,DATA_FILE, NB_SENSOR, MEASURE_INTERVAL
 
@@ -12,6 +13,7 @@ from pidas.settings import SENSOR_LIST_FILE,DATA_FILE, NB_SENSOR, MEASURE_INTERV
 def get_sensor_list(sensor_list):
     df = pd.read_csv(sensor_list)
     return df
+
 
 def read_temp_raw(device_file):
     catdata = subprocess.Popen(['cat', device_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -44,7 +46,7 @@ def get_temp_measures():
         exit(1)
     temp_measures = []
     for device in device_list:
-        head, sensor_id = os.path.split(device)
+        head, sensor_id = path.split(device)
         device_file = str(device) + '/w1_slave'
         sensor_name = sensors_df['sensor_name'][sensors_df['sensor_id'] == sensor_id].values[0]
         val = read_temp(device_file)
@@ -55,12 +57,16 @@ def get_temp_measures():
 
 
 def save_to_json(temps):
-    file_path = os.path.join(os.path.dirname(__file__), DATA_FILE)
-    print(file_path)
+    file_path = path.join(path.dirname(__file__), DATA_FILE)
     with open(file_path, 'a', encoding='utf-8') as f:
         f.write(json.dumps(temps))
+        #f.write('\n')
 
 if __name__ == "__main__":
+    base_path = path.join(path.dirname(__file__))
+    log_path = path.join(base_path, 'logs')
+    if not path.exists(log_path):
+        makedirs(log_path)
     while 1:
         try:
             temp_measures = get_temp_measures()
