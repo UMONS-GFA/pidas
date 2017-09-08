@@ -11,8 +11,10 @@ Welcome to Pidas's documentation!
    :caption: Contents:
 
    pi_configuration
+   connect_1_wire_sensors
    start
    automatization
+   minicom
 
 
 

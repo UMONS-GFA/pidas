@@ -1,6 +1,15 @@
 Raspberry Pi configuration
 ==========================
 
+Power with USB to TTL serial cable connection
+---------------------------------------------
+
+* Pin 2: 5V(red)
+* Pin 6: Gnd (Black)
+* Pin 8 : Tx (White)
+* Pin 10: Rx (Green)
+
+
 Change keyboard layout
 ----------------------
 
