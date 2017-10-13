@@ -108,7 +108,7 @@ def main():
     logging.Formatter.converter = time.gmtime
     log_format = '%(asctime)-15s %(levelname)s:%(message)s'
     logging.basicConfig(format=log_format, datefmt='%Y/%m/%d %H:%M:%S UTC', level=logging_level,
-                        handlers=[logging.FileHandler(path.join(log_path, 'log_temps_to_csv2.log')),
+                        handlers=[logging.FileHandler(path.join(log_path, 'save_sensor_data.log')),
                                   logging.StreamHandler()])
     logging.info('_____ Started _____')
     logging.info('saving in' + file_path)
