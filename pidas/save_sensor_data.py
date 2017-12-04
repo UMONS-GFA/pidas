@@ -13,7 +13,7 @@ from pidas.settings import PIDAS_DIR, DATA_FILE, CSV_HEADER, DATABASE, NB_SENSOR
 lock = RLock()
 
 
-SIMULATION_MODE = 0
+SIMULATION_MODE = 1
 
 if SIMULATION_MODE == 1:
     from pidas.fake_sensor import FakeTempSensor, generate_temp_sensor
@@ -34,7 +34,7 @@ class ThreadLocalSave(Thread):
             try:
                 if SIMULATION_MODE == 1:
                     for sensor in self.sensors:
-                        timestamp = str(int(time.time()))
+                        timestamp = int(time.time())
                         lock.acquire()
                         with open(self.csv_path, "a") as output_file:
                             writer = csv.writer(output_file)
@@ -44,7 +44,7 @@ class ThreadLocalSave(Thread):
                 else:
                     for sensor in W1ThermSensor.get_available_sensors():
                         # TODO: set a sensor name
-                        timestamp = str(int(time.time()))
+                        timestamp = int(time.time())
                         lock.acquire()
                         with open(self.csv_path, "a") as output_file:
                             writer = csv.writer(output_file)
@@ -70,7 +70,7 @@ class ThreadRemoteSave(Thread):
         while 1:
             lock.acquire()
             df = read_csv(self.csv_path)
-            df['valueTime'] = to_datetime(df['timestamp'], utc=True)
+            df['valueTime'] = to_datetime(df['timestamp'], unit='s', utc=True)
             df.set_index(['valueTime'], inplace=True)
             lock.release()
             try:
@@ -86,7 +86,7 @@ class ThreadRemoteSave(Thread):
                         for sensorName in df2['sensorName'].unique():
                             sensor_data = df2.query("sensorName=='" + sensorName + "'")  # df data for one sensor
                             self.client.write_points(sensor_data, 'temperatures',
-                                                     {'sensorName': sensorName})  # tag data with sensorID
+                                                     {'sensorName': sensorName}, time_precision='s')  # tag data with sensorID
                     except requests.exceptions.ConnectionError:
                         logging.error("Database connection lost !")
 
