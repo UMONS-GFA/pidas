@@ -3,8 +3,7 @@ import datetime
 import logging
 import csv
 import requests.exceptions
-from pandas import read_csv, to_datetime
-from influxdb import DataFrameClient, exceptions
+from influxdb import InfluxDBClient, exceptions
 from os import path, makedirs
 from threading import Thread, RLock
 
@@ -68,25 +67,38 @@ class ThreadRemoteSave(Thread):
     def run(self):
 
         while 1:
-            lock.acquire()
-            df = read_csv(self.csv_path)
-            df['valueTime'] = to_datetime(df['timestamp'], unit='s', utc=True)
-            df.set_index(['valueTime'], inplace=True)
-            lock.release()
+
             try:
-                last_measurement = self.client.query('select * from temperatures order by desc limit 1;')
-                if not last_measurement:
-                    last_date = datetime.datetime(1970, 1, 1, 0, 0, 0).replace(tzinfo=datetime.timezone.utc)
+                result_set = self.client.query('select "timestamp" from temperatures order by desc limit 1;')
+                results = list(result_set.get_points(measurement='temperatures'))
+                if not results:
+                    last_timestamp = datetime.datetime.utcfromtimestamp(0)
                 else:
-                    last_date = last_measurement["temperatures"].index.to_pydatetime()[0]
-                df2 = df[df.index > last_date]
-                if df2.size > 0:
+                    last_timestamp = float(results[0]['timestamp'])
+                    last_timestamp = datetime.datetime.utcfromtimestamp(last_timestamp)
+                new_data = []
+                lock.acquire()
+
+                with open(self.csv_path, newline='') as csvfile:
+                    csv_data = csv.reader(csvfile, delimiter=',')
+                    header = csv_data.__next__()
+                    for row in csv_data:
+
+                        row_date = datetime.datetime.utcfromtimestamp(int(row[3]))
+                        if  row_date > last_timestamp:
+                            new_data.append(row)
+                lock.release()
+                row_count = len(new_data)
+                if row_count > 0:
                     try:
                         logging.info("Sending data to remote database…")
-                        for sensorName in df2['sensorName'].unique():
-                            sensor_data = df2.query("sensorName=='" + sensorName + "'")  # df data for one sensor
-                            self.client.write_points(sensor_data, 'temperatures',
-                                                     {'sensorName': sensorName}, time_precision='s')  # tag data with sensorID
+                        data = []
+                        for i in range(row_count):
+                            time_value = datetime.datetime.utcfromtimestamp(float(new_data[i][3]))
+                            data.append({'measurement': 'temperatures', 'tags': {'sensorID': '%s' % new_data[i][0]},
+                                         'time': time_value.strftime('%Y-%m-%d %H:%M:%S %Z'),
+                                         'fields': {'value': new_data[i][2], 'timestamp': '%s' % new_data[i][3]}})
+                        self.client.write_points(data)  # tag data with sensorID
                     except requests.exceptions.ConnectionError:
                         logging.error("Database connection lost !")
 
@@ -116,24 +128,24 @@ def main():
         with open(file_path, "w") as output_file:
             writer = csv.writer(output_file)
             writer.writerow(CSV_HEADER)
-    client = DataFrameClient(DATABASE['HOST'], DATABASE['PORT'], DATABASE['USER'], DATABASE['PASSWORD'],
+    client = InfluxDBClient(DATABASE['HOST'], DATABASE['PORT'], DATABASE['USER'], DATABASE['PASSWORD'],
                              DATABASE['NAME'])
     sensors = []
     if SIMULATION_MODE == 1:
         try:
-            last_measurement = client.query('select * from temperatures order by desc limit 1;')
-            if not last_measurement:
+            last_timestamp = client.query('select "timestamp" from temperatures order by desc limit 1;')
+            if not last_timestamp:
                 logging.info("Serie is empty, creating new sensors…")
                 sensors = generate_temp_sensor(NB_SENSOR)
                 logging.info("Sensors generated")
             else:
                 try:
-                    "Getting sensors from database…"
+                    logging.info("Getting sensors from database…")
                     result_set = client.query('select distinct(sensorID) as sensorID from temperatures ')
-
-                    for result in result_set['temperatures'].sensorID:
+                    results = list(result_set.get_points(measurement='temperatures'))
+                    for result in results:
                         s = FakeTempSensor()
-                        s.id = result
+                        s.id = result['sensorID']
                         sensors.append(s)
                 except requests.exceptions.ConnectionError:
                     logging.error("Database connection lost !")
