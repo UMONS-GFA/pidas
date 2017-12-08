@@ -1,7 +1,7 @@
-import time
-import datetime
 import logging
 import csv
+from time import time, gmtime, sleep
+from datetime import datetime
 import requests.exceptions
 from influxdb import InfluxDBClient, exceptions
 from os import path, makedirs
@@ -33,7 +33,7 @@ class ThreadLocalSave(Thread):
             try:
                 if SIMULATION_MODE == 1:
                     for sensor in self.sensors:
-                        timestamp = int(time.time())
+                        timestamp = int(time())
                         lock.acquire()
                         with open(self.csv_path, "a") as output_file:
                             writer = csv.writer(output_file)
@@ -43,14 +43,14 @@ class ThreadLocalSave(Thread):
                 else:
                     for sensor in W1ThermSensor.get_available_sensors():
                         # TODO: set a sensor name
-                        timestamp = int(time.time())
+                        timestamp = int(time())
                         lock.acquire()
                         with open(self.csv_path, "a") as output_file:
                             writer = csv.writer(output_file)
                             row = sensor.id, 'T', sensor.get_temperature(), timestamp
                             writer.writerow(row)
                             lock.release()
-                time.sleep(self.sleep_time)
+                sleep(self.sleep_time)
 
             finally:
                 pass
@@ -72,10 +72,10 @@ class ThreadRemoteSave(Thread):
                 result_set = self.client.query('select "timestamp" from temperatures order by desc limit 1;')
                 results = list(result_set.get_points(measurement='temperatures'))
                 if not results:
-                    last_timestamp = datetime.datetime.utcfromtimestamp(0)
+                    last_timestamp = datetime.utcfromtimestamp(0)
                 else:
                     last_timestamp = float(results[0]['timestamp'])
-                    last_timestamp = datetime.datetime.utcfromtimestamp(last_timestamp)
+                    last_timestamp = datetime.utcfromtimestamp(last_timestamp)
                 new_data = []
                 lock.acquire()
 
@@ -84,7 +84,7 @@ class ThreadRemoteSave(Thread):
                     header = csv_data.__next__()
                     for row in csv_data:
 
-                        row_date = datetime.datetime.utcfromtimestamp(int(row[3]))
+                        row_date = datetime.utcfromtimestamp(int(row[3]))
                         if  row_date > last_timestamp:
                             new_data.append(row)
                 lock.release()
@@ -94,7 +94,7 @@ class ThreadRemoteSave(Thread):
                         logging.info("Sending data to remote database…")
                         data = []
                         for i in range(row_count):
-                            time_value = datetime.datetime.utcfromtimestamp(float(new_data[i][3]))
+                            time_value = datetime.utcfromtimestamp(float(new_data[i][3]))
                             data.append({'measurement': 'temperatures', 'tags': {'sensorID': '%s' % new_data[i][0]},
                                          'time': time_value.strftime('%Y-%m-%d %H:%M:%S %Z'),
                                          'fields': {'value': new_data[i][2], 'timestamp': '%s' % new_data[i][3]}})
@@ -108,7 +108,7 @@ class ThreadRemoteSave(Thread):
                 logging.error("Database connection lost !")
             except exceptions.InfluxDBClientError as e:
                 logging.error("{}".format(e.content))
-            time.sleep(self.sleep_time)
+            sleep(self.sleep_time)
 
 
 def main():
@@ -117,7 +117,7 @@ def main():
     if not path.exists(log_path):
         makedirs(log_path)
     logging_level = logging.DEBUG
-    logging.Formatter.converter = time.gmtime
+    logging.Formatter.converter = gmtime
     log_format = '%(asctime)-15s %(levelname)s:%(message)s'
     logging.basicConfig(format=log_format, datefmt='%Y/%m/%d %H:%M:%S UTC', level=logging_level,
                         handlers=[logging.FileHandler(path.join(log_path, 'save_sensor_data.log')),
