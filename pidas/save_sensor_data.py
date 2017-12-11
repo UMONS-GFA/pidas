@@ -7,7 +7,7 @@ from influxdb import InfluxDBClient, exceptions
 from os import path, makedirs
 from threading import Thread, RLock
 
-from pidas.settings import PIDAS_DIR, DATA_FILE, CSV_HEADER, DATABASE, NB_SENSOR
+from pidas.settings import PIDAS_DIR, DATA_FILE, CSV_HEADER, DATABASE, NB_SENSOR, MEASURE_INTERVAL
 
 lock = RLock()
 
@@ -22,7 +22,7 @@ else:
 
 class ThreadLocalSave(Thread):
     """Thread that save data locally"""
-    def __init__(self, file_path, sensors, sleep_time=2):
+    def __init__(self, file_path, sensors, sleep_time=MEASURE_INTERVAL):
         Thread.__init__(self)
         self.csv_path = file_path
         self.sensors = sensors
@@ -58,7 +58,7 @@ class ThreadLocalSave(Thread):
 
 class ThreadRemoteSave(Thread):
     """Thread sending data to remote database"""
-    def __init__(self, client, file_path, sleep_time=10):
+    def __init__(self, client, file_path, sleep_time=MEASURE_INTERVAL):
         Thread.__init__(self)
         self.client = client
         self.csv_path = file_path
