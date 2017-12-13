@@ -95,9 +95,10 @@ class ThreadRemoteSave(Thread):
                         data = []
                         for i in range(row_count):
                             time_value = datetime.utcfromtimestamp(float(new_data[i][3]))
+                            value = float(new_data[i][2])
                             data.append({'measurement': 'temperatures', 'tags': {'sensorID': '%s' % new_data[i][0]},
                                          'time': time_value.strftime('%Y-%m-%d %H:%M:%S %Z'),
-                                         'fields': {'value': new_data[i][2], 'timestamp': '%s' % new_data[i][3]}})
+                                         'fields': {'value': value, 'timestamp': '%s' % new_data[i][3]}})
                         self.client.write_points(data)  # tag data with sensorID
                     except requests.exceptions.ConnectionError:
                         logging.error("Database connection lost !")
