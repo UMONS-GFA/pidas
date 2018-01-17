@@ -5,6 +5,10 @@ Get the code::
 
     git clone https://github.com/UMONS-GFA/pidas.git
 
+For Raspberry Pi, switch on "without_pandas" branch::
+
+    git checkout -b without_pandas origin/without_pandas
+
 Create a **settings.py** file in the pidas/pidas directory.
 Your can now configure your custom settings.
 

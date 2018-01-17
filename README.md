@@ -12,5 +12,5 @@ Install from that Pipfile.lock:
 
     $ pipenv install --ignore-pipfile
 
-
+To use it, see the [docs](http://pidas.readthedocs.io/en/latest/start.html)
 
