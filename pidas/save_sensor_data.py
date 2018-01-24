@@ -7,12 +7,11 @@ from influxdb import InfluxDBClient, exceptions
 from os import path, makedirs
 from threading import Thread, RLock
 
-from pidas.settings import PIDAS_DIR, DATA_FILE, CSV_HEADER, DATABASE, NB_SENSOR, MEASURE_INTERVAL
+from pidas.settings import PIDAS_DIR, DATA_FILE, CSV_HEADER, DATABASE, NB_SENSOR, MEASURE_INTERVAL, SIMULATION_MODE
 
 lock = RLock()
 
 
-SIMULATION_MODE = 1
 
 if SIMULATION_MODE == 1:
     from pidas.fake_sensor import FakeTempSensor, generate_temp_sensor
