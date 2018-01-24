@@ -5,10 +5,6 @@ Get the code::
 
     git clone https://github.com/UMONS-GFA/pidas.git
 
-For Raspberry Pi, switch on "without_pandas" branch::
-
-    git checkout -b without_pandas origin/without_pandas
-
 Create a **settings.py** file in the pidas/pidas directory.
 Your can now configure your custom settings.
 
@@ -59,4 +55,13 @@ The relative path directory to your logs::
 Number of sensors you want to generate::
 
     NB_SENSOR = 8
+
+``SIMULATION_MODE``
+-------------------
+
+If simulation mode is set to 1, sensors will be created::
+
+   SIMULATION_MODE = 0
+
+
 
