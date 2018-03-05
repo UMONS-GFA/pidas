@@ -16,7 +16,7 @@ lock = RLock()
 if SIMULATION_MODE == 1:
     from pidas.fake_sensor import FakeTempSensor, generate_temp_sensor
 else:
-    from w1thermsensor import W1ThermSensor
+    from w1thermsensor import W1ThermSensor, SensorNotReadyError
 
 
 class ThreadLocalSave(Thread):
@@ -46,8 +46,11 @@ class ThreadLocalSave(Thread):
                         lock.acquire()
                         with open(self.csv_path, "a") as output_file:
                             writer = csv.writer(output_file)
-                            row = sensor.id, 'T', sensor.get_temperature(), timestamp
-                            writer.writerow(row)
+                            try:
+                                row = sensor.id, 'T', sensor.get_temperature(), timestamp
+                                writer.writerow(row)
+                            except SensorNotReadyError as e:
+                                logging.error(e)
                             lock.release()
                 sleep(self.sleep_time)
 
