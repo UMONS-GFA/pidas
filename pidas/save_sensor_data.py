@@ -1,11 +1,13 @@
+import sys
 import logging
+import signal
 import csv
 from time import time, gmtime, sleep
 from datetime import datetime
 import requests.exceptions
 from influxdb import InfluxDBClient, exceptions
 from os import path, makedirs
-from threading import Thread, RLock
+from threading import Thread, RLock, Event
 
 from pidas.settings import PIDAS_DIR, DATA_FILE, CSV_HEADER, DATABASE, NB_SENSOR, MEASURE_INTERVAL, SIMULATION_MODE
 
@@ -19,6 +21,15 @@ else:
     from w1thermsensor import W1ThermSensor, SensorNotReadyError
 
 
+
+
+def exit_threads(signum, frame):
+    thread_local_save.stop()
+    thread_remote_save.stop()
+    logging.info("Exit({})".format(signum))
+    sys.exit(signum)
+
+
 class ThreadLocalSave(Thread):
     """Thread that save data locally"""
     def __init__(self, file_path, sensors, sleep_time=MEASURE_INTERVAL):
@@ -28,7 +39,9 @@ class ThreadLocalSave(Thread):
         self.sleep_time = sleep_time
 
     def run(self):
-        while 1:
+        self.event = Event()
+        logging.info("Starting {}…".format(self.getName()))
+        while not self.event.isSet():
             try:
                 if SIMULATION_MODE == 1:
                     for sensor in self.sensors:
@@ -57,6 +70,10 @@ class ThreadLocalSave(Thread):
             finally:
                 pass
 
+    def stop(self):
+        logging.info("Stopping {}…".format(self.getName()))
+        self.event.set()
+
 
 class ThreadRemoteSave(Thread):
     """Thread sending data to remote database"""
@@ -67,9 +84,9 @@ class ThreadRemoteSave(Thread):
         self.sleep_time = sleep_time
 
     def run(self):
-
-        while 1:
-
+        logging.info("Starting {}…".format(self.getName()))
+        self.event = Event()
+        while not self.event.isSet():
             try:
                 result_set = self.client.query('select "timestamp" from temperatures order by desc limit 1;')
                 results = list(result_set.get_points(measurement='temperatures'))
@@ -113,60 +130,64 @@ class ThreadRemoteSave(Thread):
                 logging.error("{}".format(e.content))
             sleep(self.sleep_time)
 
-
-def main():
-    log_path = path.join(PIDAS_DIR, 'logs')
-    file_path = path.join(PIDAS_DIR, DATA_FILE)
-    if not path.exists(log_path):
-        makedirs(log_path)
-    logging_level = logging.DEBUG
-    logging.Formatter.converter = gmtime
-    log_format = '%(asctime)-15s %(levelname)s:%(message)s'
-    logging.basicConfig(format=log_format, datefmt='%Y/%m/%d %H:%M:%S UTC', level=logging_level,
-                        handlers=[logging.FileHandler(path.join(log_path, 'save_sensor_data.log')),
-                                  logging.StreamHandler()])
-    logging.info('_____ Started _____')
-    logging.info('saving in' + file_path)
-    if not path.exists(file_path):
-        with open(file_path, "w") as output_file:
-            writer = csv.writer(output_file)
-            writer.writerow(CSV_HEADER)
-    client = InfluxDBClient(DATABASE['HOST'], DATABASE['PORT'], DATABASE['USER'], DATABASE['PASSWORD'],
-                             DATABASE['NAME'])
-    sensors = []
-    if SIMULATION_MODE == 1:
-        try:
-            last_timestamp = client.query('select "timestamp" from temperatures order by desc limit 1;')
-            if not last_timestamp:
-                logging.info("Serie is empty, creating new sensors…")
-                sensors = generate_temp_sensor(NB_SENSOR)
-                logging.info("Sensors generated")
-            else:
-                try:
-                    logging.info("Getting sensors from database…")
-                    result_set = client.query('select distinct(sensorID) as sensorID from temperatures ')
-                    results = list(result_set.get_points(measurement='temperatures'))
-                    for result in results:
-                        s = FakeTempSensor()
-                        s.id = result['sensorID']
-                        sensors.append(s)
-                except requests.exceptions.ConnectionError:
-                    logging.error("Database connection lost !")
-        except requests.exceptions.ConnectionError:
-            logging.error("Database connection lost !")
-        except exceptions.InfluxDBClientError as e:
-            logging.error("{}".format(e.content))
-    else:
-        sensors = W1ThermSensor.get_available_sensors()
-
-    thread_local_save = ThreadLocalSave(file_path=file_path, sensors=sensors)
-    thread_remote_save = ThreadRemoteSave(client, file_path=file_path)
-    thread_local_save.start()
-    thread_remote_save.start()
-    # wait until threads terminates
-    thread_local_save.join()
-    thread_remote_save.join()
+    def stop(self):
+        logging.info("Stopping {}…".format(self.getName()))
+        self.event.set()
 
 
-if __name__ == "__main__":
-    main()
+# Set the signal handler to terminate program properly
+signal.signal(signal.SIGTERM, exit_threads)
+
+log_path = path.join(PIDAS_DIR, 'logs')
+file_path = path.join(PIDAS_DIR, DATA_FILE)
+if not path.exists(log_path):
+    makedirs(log_path)
+logging_level = logging.DEBUG
+logging.Formatter.converter = gmtime
+log_format = '%(asctime)-15s %(levelname)s:%(message)s'
+logging.basicConfig(format=log_format, datefmt='%Y/%m/%d %H:%M:%S UTC', level=logging_level,
+                    handlers=[logging.FileHandler(path.join(log_path, 'save_sensor_data.log')),
+                              logging.StreamHandler()])
+logging.info('_____ Started _____')
+logging.info('saving in' + file_path)
+if not path.exists(file_path):
+    with open(file_path, "w") as output_file:
+        writer = csv.writer(output_file)
+        writer.writerow(CSV_HEADER)
+client = InfluxDBClient(DATABASE['HOST'], DATABASE['PORT'], DATABASE['USER'], DATABASE['PASSWORD'],
+                        DATABASE['NAME'])
+sensors = []
+if SIMULATION_MODE == 1:
+    try:
+        last_timestamp = client.query('select "timestamp" from temperatures order by desc limit 1;')
+        if not last_timestamp:
+            logging.info("Serie is empty, creating new sensors…")
+            sensors = generate_temp_sensor(NB_SENSOR)
+            logging.info("Sensors generated")
+        else:
+            try:
+                logging.info("Getting sensors from database…")
+                result_set = client.query('select distinct(sensorID) as sensorID from temperatures ')
+                results = list(result_set.get_points(measurement='temperatures'))
+                for result in results:
+                    s = FakeTempSensor()
+                    s.id = result['sensorID']
+                    sensors.append(s)
+            except requests.exceptions.ConnectionError:
+                logging.error("Database connection lost !")
+    except requests.exceptions.ConnectionError:
+        logging.error("Database connection lost !")
+    except exceptions.InfluxDBClientError as e:
+        logging.error("{}".format(e.content))
+else:
+    sensors = W1ThermSensor.get_available_sensors()
+
+thread_local_save = ThreadLocalSave(file_path=file_path, sensors=sensors)
+thread_local_save.setName('localSavingThread')
+thread_remote_save = ThreadRemoteSave(client, file_path=file_path)
+thread_remote_save.setName('remoteSavingThread  ')
+thread_local_save.start()
+thread_remote_save.start()
+# wait until threads terminates before stopping main
+thread_local_save.join()
+thread_remote_save.join()
