@@ -28,8 +28,7 @@ class customTimeRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
         self.file_pre_exists = os.path.exists(filename)
         self.header = header
 
-        # Write header for first time file creation
-        self.stream.write('{}\n'.format(self.header))
+        self.doRollover()
 
 
     def emit(self, record):
