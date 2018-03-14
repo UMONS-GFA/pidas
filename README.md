@@ -14,3 +14,10 @@ Install from that Pipfile.lock:
 
 To use it, see the [docs](http://pidas.readthedocs.io/en/latest/start.html)
 
+Add the DATA_HEADER parameter to the settings:
+
+    DATA_HEADER = "sensorID,value,timestamp"
+
+Configure a cronjob for rsync script
+
+    * * * * * /bin/bash /home/pi/rsync.sh
