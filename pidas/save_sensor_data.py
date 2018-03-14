@@ -11,14 +11,14 @@ from influxdb import InfluxDBClient, exceptions
 from os import path, makedirs
 from threading import Thread, RLock, Event
 
-from pidas.settings import PIDAS_DIR, DATA_FILE, CSV_HEADER, DATABASE, NB_SENSOR, MEASURE_INTERVAL, SIMULATION_MODE
+from pidas.settings import PIDAS_DIR, DATA_FILE, DATA_HEADER, DATABASE, NB_SENSOR, MEASURE_INTERVAL, SIMULATION_MODE
 
 lock = RLock()
 
 
 
 class customTimeRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
-    def __init__(self, filename, header, when='M', interval=1, backupCount=0, encoding=None,
+    def __init__(self, filename, header, when='midnight', interval=1, backupCount=0, encoding=None,
                  delay=False, utc=True, atTime=None):
 
         logging.handlers.TimedRotatingFileHandler.__init__(self, filename=filename, when=when,
@@ -50,8 +50,7 @@ if not path.exists(data_path):
 data_log_filename = path.join(data_path, 'data_log')
 # Set data logging level and handler
 data_logger.setLevel(logging.INFO)
-HEADER_ROW = "sensorID,value,timestamp"
-data_handler = customTimeRotatingFileHandler(data_log_filename, header=HEADER_ROW, when='M', interval=1, delay=False)
+data_handler = customTimeRotatingFileHandler(data_log_filename, header=DATA_HEADER, when='M', interval=5, delay=False)
 data_handler.suffix = "%Y-%m-%d %H:%M"
 data_logger.addHandler(data_handler)
 
@@ -73,9 +72,8 @@ def exit_threads(signum, frame):
 
 class ThreadLocalSave(Thread):
     """Thread that save data locally"""
-    def __init__(self, file_path, sensors, sleep_time=MEASURE_INTERVAL):
+    def __init__(self, sensors, sleep_time=MEASURE_INTERVAL):
         Thread.__init__(self)
-        self.csv_path = file_path
         self.sensors = sensors
         self.sleep_time = sleep_time
 
@@ -116,10 +114,9 @@ class ThreadLocalSave(Thread):
 
 class ThreadRemoteSave(Thread):
     """Thread sending data to remote database"""
-    def __init__(self, client, file_path, sleep_time=MEASURE_INTERVAL):
+    def __init__(self, client, sleep_time=MEASURE_INTERVAL):
         Thread.__init__(self)
         self.client = client
-        self.csv_path = file_path
         self.sleep_time = sleep_time
 
     def run(self):
@@ -137,12 +134,12 @@ class ThreadRemoteSave(Thread):
                 new_data = []
                 lock.acquire()
 
-                with open(self.csv_path, newline='') as csvfile:
+                with open(data_log_filename, newline='') as csvfile:
                     csv_data = csv.reader(csvfile, delimiter=',')
                     header = csv_data.__next__()
                     for row in csv_data:
 
-                        row_date = datetime.utcfromtimestamp(int(row[3]))
+                        row_date = datetime.utcfromtimestamp(int(row[2]))
                         if  row_date > last_timestamp:
                             new_data.append(row)
                 lock.release()
@@ -152,11 +149,11 @@ class ThreadRemoteSave(Thread):
                         logging.info("Sending data to remote database…")
                         data = []
                         for i in range(row_count):
-                            time_value = datetime.utcfromtimestamp(float(new_data[i][3]))
-                            value = float(new_data[i][2])
+                            time_value = datetime.utcfromtimestamp(float(new_data[i][2]))
+                            value = float(new_data[i][1])
                             data.append({'measurement': 'temperatures', 'tags': {'sensorID': '%s' % new_data[i][0]},
                                          'time': time_value.strftime('%Y-%m-%d %H:%M:%S %Z'),
-                                         'fields': {'value': value, 'timestamp': '%s' % new_data[i][3]}})
+                                         'fields': {'value': value, 'timestamp': '%s' % new_data[i][2]}})
                         self.client.write_points(data)  # tag data with sensorID
                     except requests.exceptions.ConnectionError:
                         logging.error("Database connection lost !")
@@ -189,10 +186,6 @@ logging.basicConfig(format=log_format, datefmt='%Y/%m/%d %H:%M:%S UTC', level=lo
                               logging.StreamHandler()])
 logging.info('_____ Started _____')
 logging.info('saving in' + file_path)
-if not path.exists(file_path):
-    with open(file_path, "w") as output_file:
-        writer = csv.writer(output_file)
-        writer.writerow(CSV_HEADER)
 client = InfluxDBClient(DATABASE['HOST'], DATABASE['PORT'], DATABASE['USER'], DATABASE['PASSWORD'],
                         DATABASE['NAME'])
 sensors = []
@@ -221,12 +214,12 @@ if SIMULATION_MODE == 1:
 else:
     sensors = W1ThermSensor.get_available_sensors()
 
-thread_local_save = ThreadLocalSave(file_path=file_path, sensors=sensors)
+thread_local_save = ThreadLocalSave(sensors=sensors)
 thread_local_save.setName('localSavingThread')
-thread_remote_save = ThreadRemoteSave(client, file_path=file_path)
-thread_remote_save.setName('remoteSavingThread  ')
+thread_remote_save = ThreadRemoteSave(client)
+thread_remote_save.setName('remoteSavingThread')
 thread_local_save.start()
-# thread_remote_save.start()
+thread_remote_save.start()
 # wait until threads terminates before stopping main
 thread_local_save.join()
-# thread_remote_save.join()
+thread_remote_save.join()
