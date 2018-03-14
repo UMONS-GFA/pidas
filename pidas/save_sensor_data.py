@@ -1,5 +1,7 @@
+import os
 import sys
 import logging
+from logging import handlers
 import signal
 import csv
 from time import time, gmtime, sleep
@@ -13,6 +15,45 @@ from pidas.settings import PIDAS_DIR, DATA_FILE, CSV_HEADER, DATABASE, NB_SENSOR
 
 lock = RLock()
 
+
+
+class customTimeRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
+    def __init__(self, filename, header, when='M', interval=1, backupCount=0, encoding=None,
+                 delay=False, utc=True, atTime=None):
+
+        logging.handlers.TimedRotatingFileHandler.__init__(self, filename=filename, when=when,
+                                                           interval=interval,
+                                                  backupCount=backupCount, encoding=encoding, delay=delay,
+                                                  utc=utc, atTime=atTime)
+        self.file_pre_exists = os.path.exists(filename)
+        self.header = header
+
+        # Write header for first time file creation
+        self.stream.write('{}\n'.format(self.header))
+
+
+    def emit(self, record):
+        # Call the parent class emit function.
+        logging.handlers.TimedRotatingFileHandler.emit(self, record)
+
+    def doRollover(self):
+        logging.info("Rotating file...")
+        logging.handlers.TimedRotatingFileHandler.doRollover(self)
+        # Write header when file has rotated
+        self.stream.write('{}\n'.format(self.header))
+
+
+data_logger = logging.getLogger('data_logger')
+data_path =  path.join(PIDAS_DIR, 'data')
+if not path.exists(data_path):
+    makedirs(data_path)
+data_log_filename = path.join(data_path, 'data_log')
+# Set data logging level and handler
+data_logger.setLevel(logging.INFO)
+HEADER_ROW = "sensorID,value,timestamp"
+data_handler = customTimeRotatingFileHandler(data_log_filename, header=HEADER_ROW, when='M', interval=1, delay=False)
+data_handler.suffix = "%Y-%m-%d %H:%M"
+data_logger.addHandler(data_handler)
 
 
 if SIMULATION_MODE == 1:
@@ -47,24 +88,22 @@ class ThreadLocalSave(Thread):
                     for sensor in self.sensors:
                         timestamp = int(time())
                         lock.acquire()
-                        with open(self.csv_path, "a") as output_file:
-                            writer = csv.writer(output_file)
-                            row = sensor.id, sensor.name, sensor.get_temperature(), timestamp
-                            writer.writerow(row)
-                            lock.release()
+                        temperature = sensor.get_temperature()
+                        row = "{},{},{}".format(sensor.id, temperature, timestamp)
+                        data_logger.info(row)
+                        lock.release()
                 else:
                     for sensor in W1ThermSensor.get_available_sensors():
                         # TODO: set a sensor name
                         timestamp = int(time())
                         lock.acquire()
-                        with open(self.csv_path, "a") as output_file:
-                            writer = csv.writer(output_file)
-                            try:
-                                row = sensor.id, 'T', sensor.get_temperature(), timestamp
-                                writer.writerow(row)
-                            except SensorNotReadyError as e:
-                                logging.error(e)
-                            lock.release()
+                        try:
+                            temperature = sensor.get_temperature()
+                            row = "{},{},{}".format(sensor.id, temperature, timestamp)
+                            data_logger.info(row)
+                        except SensorNotReadyError as e:
+                            logging.error(e)
+                        lock.release()
                 sleep(self.sleep_time)
 
             finally:
@@ -187,7 +226,7 @@ thread_local_save.setName('localSavingThread')
 thread_remote_save = ThreadRemoteSave(client, file_path=file_path)
 thread_remote_save.setName('remoteSavingThread  ')
 thread_local_save.start()
-thread_remote_save.start()
+# thread_remote_save.start()
 # wait until threads terminates before stopping main
 thread_local_save.join()
-thread_remote_save.join()
+# thread_remote_save.join()
