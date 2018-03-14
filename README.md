@@ -20,4 +20,4 @@ Add the DATA_HEADER parameter to the settings:
 
 Configure a cronjob for rsync script
 
-    * * * * * /bin/bash /home/pi/rsync.sh
+    * * * * * /bin/bash /home/pi/pidas/pidas/rsync.sh
