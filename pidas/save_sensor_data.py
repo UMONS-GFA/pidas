@@ -49,7 +49,7 @@ if not path.exists(data_path):
 data_log_filename = path.join(data_path, 'data_log')
 # Set data logging level and handler
 data_logger.setLevel(logging.INFO)
-data_handler = customTimeRotatingFileHandler(data_log_filename, header=DATA_HEADER, when='M', interval=5, delay=False)
+data_handler = customTimeRotatingFileHandler(data_log_filename, header=DATA_HEADER)
 data_handler.suffix = "%Y-%m-%d %H:%M"
 data_logger.addHandler(data_handler)
 
