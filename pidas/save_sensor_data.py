@@ -3,6 +3,7 @@ import sys
 import logging
 import signal
 import csv
+import re
 from time import time, gmtime, sleep
 from datetime import datetime
 import requests.exceptions
@@ -55,7 +56,7 @@ data_formatter = logging.Formatter(log_format)
 data_formatter.converter = gmtime
 data_formatter.datefmt = '%Y/%m/%d %H:%M:%S UTC'
 data_handler.setFormatter(data_formatter)
-data_handler.suffix = "%Y_%m_%d_%H_%M"
+data_handler.suffix = "%Y%m%d_%H%M"
 data_logger.addHandler(data_handler)
 
 
