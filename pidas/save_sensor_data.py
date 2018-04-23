@@ -36,6 +36,7 @@ msg_handler = CustomTimeRotatingFileHandler(msg_log_filename, header='')
 msg_formatter = logging.Formatter(log_format)
 msg_formatter.converter = gmtime
 msg_formatter.datefmt = '%Y/%m/%d %H:%M:%S UTC'
+msg_handler.setFormatter(msg_formatter)
 msg_logger.addHandler(msg_handler)
 
 
@@ -50,6 +51,10 @@ data_log_filename = path.join(data_path, 'data_log')
 # Set data logging level and handler
 data_logger.setLevel(logging.INFO)
 data_handler = CustomTimeRotatingFileHandler(data_log_filename, header=DATA_HEADER)
+data_formatter = logging.Formatter(log_format)
+data_formatter.converter = gmtime
+data_formatter.datefmt = '%Y/%m/%d %H:%M:%S UTC'
+data_handler.setFormatter(data_formatter)
 data_handler.suffix = "%Y_%m_%d_%H_%M"
 data_logger.addHandler(data_handler)
 
