@@ -30,11 +30,6 @@ else:
 
 lock = RLock()
 
-# TODO: fix logging
-# TODO: choose message debug level
-
-
-
 # Debug logger setup
 msg_logger = logging.getLogger('msg_logger')
 log_path = path.join(PIDAS_DIR, 'logs')
@@ -58,9 +53,6 @@ msg_logger.addHandler(msg_handler)
 if logging_to_console:
     msg_logger.addHandler(logging.StreamHandler())
 
-
-
-
 # Data logger setup
 data_logger = logging.getLogger('data_logger')
 data_path =  path.join(PIDAS_DIR, 'data')
@@ -79,6 +71,7 @@ data_handler.setFormatter(data_formatter)
 data_handler.suffix = "%Y%m%d_%H%M"
 data_logger.addHandler(data_handler)
 
+
 def exit_threads(signum, frame):
     thread_local_save.stop()
     thread_remote_save.stop()
@@ -92,6 +85,7 @@ class ThreadLocalSave(Thread):
         Thread.__init__(self)
         self.sensors = sensors
         self.sleep_time = sleep_time
+        self.event = None
 
     def run(self):
         self.event = Event()
@@ -189,7 +183,6 @@ class ThreadRemoteSave(Thread):
 
 # Set the signal handler to terminate program properly
 signal.signal(signal.SIGTERM, exit_threads)
-
 
 
 msg_logger.info('_____ Started _____')
