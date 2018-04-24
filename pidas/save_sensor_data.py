@@ -11,13 +11,26 @@ from influxdb import InfluxDBClient, exceptions
 from os import path, makedirs
 from threading import Thread, RLock, Event
 
-from pidas.settings import PIDAS_DIR, DATA_FILE, DATA_HEADER, DATABASE, NB_SENSOR, MEASURE_INTERVAL, SIMULATION_MODE
+from pidas.settings import PIDAS_DIR, DATA_FILE, DATA_HEADER, DATABASE, NB_SENSOR, MEASURE_INTERVAL, \
+    SIMULATION_MODE, LOGGING_CONFIG, DATA_LOGGING_CONFIG
+
 from pidas.custom_file_handler import CustomTimeRotatingFileHandler
+
+if SIMULATION_MODE == 1:
+    from pidas.fake_sensor import FakeTempSensor, generate_temp_sensor
+else:
+    from w1thermsensor import W1ThermSensor, SensorNotReadyError
+
+
+debug = LOGGING_CONFIG['debug_mode']
+if debug:
+    logging_level = logging.DEBUG
+else:
+    logging_level = logging.INFO
 
 lock = RLock()
 
 # TODO: fix logging
-# TODO: change filenames
 # TODO: choose message debug level
 
 
@@ -28,17 +41,22 @@ log_path = path.join(PIDAS_DIR, 'logs')
 file_path = path.join(PIDAS_DIR, DATA_FILE)
 if not path.exists(log_path):
     makedirs(log_path)
-msg_log_filename = path.join(log_path, 'save_sensor_data.log')
+msg_log_filename = path.join(log_path, LOGGING_CONFIG['file_name'])
 
 # set message loggin level and handler
 log_format = '%(asctime)-15s | %(process)d | %(levelname)s: %(message)s'
-msg_logger.setLevel(logging.DEBUG)
-msg_handler = CustomTimeRotatingFileHandler(msg_log_filename, header='')
+logging_to_console = LOGGING_CONFIG['logging_to_console']
+msg_logger.setLevel(logging_level)
+msg_handler = CustomTimeRotatingFileHandler(msg_log_filename, header='', when=LOGGING_CONFIG['when'],
+                                            interval=LOGGING_CONFIG['interval'])
 msg_formatter = logging.Formatter(log_format)
 msg_formatter.converter = gmtime
 msg_formatter.datefmt = '%Y/%m/%d %H:%M:%S UTC'
 msg_handler.setFormatter(msg_formatter)
 msg_logger.addHandler(msg_handler)
+
+if logging_to_console:
+    msg_logger.addHandler(logging.StreamHandler())
 
 
 
@@ -48,25 +66,18 @@ data_logger = logging.getLogger('data_logger')
 data_path =  path.join(PIDAS_DIR, 'data')
 if not path.exists(data_path):
     makedirs(data_path)
-data_log_filename = path.join(data_path, 'data_log')
+data_log_filename = path.join(data_path, DATA_LOGGING_CONFIG['file_name'])
 # Set data logging level and handler
 data_logger.setLevel(logging.INFO)
-data_handler = CustomTimeRotatingFileHandler(data_log_filename, header=DATA_HEADER)
+#data_handler = CustomTimeRotatingFileHandler(data_log_filename, header=DATA_HEADER)
+data_handler = CustomTimeRotatingFileHandler(data_log_filename, header=DATA_HEADER, when=DATA_LOGGING_CONFIG['when'],
+                                             interval=DATA_LOGGING_CONFIG['interval'])
 data_formatter = logging.Formatter(log_format)
 data_formatter.converter = gmtime
 data_formatter.datefmt = '%Y/%m/%d %H:%M:%S UTC'
 data_handler.setFormatter(data_formatter)
 data_handler.suffix = "%Y%m%d_%H%M"
 data_logger.addHandler(data_handler)
-
-
-if SIMULATION_MODE == 1:
-    from pidas.fake_sensor import FakeTempSensor, generate_temp_sensor
-else:
-    from w1thermsensor import W1ThermSensor, SensorNotReadyError
-
-
-
 
 def exit_threads(signum, frame):
     thread_local_save.stop()
