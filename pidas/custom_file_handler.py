@@ -16,7 +16,6 @@ class CustomTimeRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
 
         self.doRollover()
 
-
     def emit(self, record):
         # Call the parent class emit function.
         logging.handlers.TimedRotatingFileHandler.emit(self, record)
