@@ -13,7 +13,7 @@ class CustomTimeRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
                                                   utc=utc, atTime=atTime)
         self.file_pre_exists = os.path.exists(filename)
         self.header = header
-
+        # Mandatory to make a rollover to write the header
         self.doRollover()
 
     def emit(self, record):
