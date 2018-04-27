@@ -61,13 +61,8 @@ if not path.exists(data_path):
 data_log_filename = path.join(data_path, DATA_LOGGING_CONFIG['file_name'])
 # Set data logging level and handler
 data_logger.setLevel(logging.INFO)
-#data_handler = CustomTimeRotatingFileHandler(data_log_filename, header=DATA_HEADER)
 data_handler = CustomTimeRotatingFileHandler(data_log_filename, header=DATA_HEADER, when=DATA_LOGGING_CONFIG['when'],
                                              interval=DATA_LOGGING_CONFIG['interval'])
-data_formatter = logging.Formatter(log_format)
-data_formatter.converter = gmtime
-data_formatter.datefmt = '%Y/%m/%d %H:%M:%S UTC'
-data_handler.setFormatter(data_formatter)
 data_handler.suffix = "%Y%m%d_%H%M"
 data_logger.addHandler(data_handler)
 
