@@ -182,7 +182,7 @@ signal.signal(signal.SIGTERM, exit_threads)
 
 msg_logger.info('_____ Started _____')
 msg_logger.info('saving in' + data_log_filename)
-msg_logger.info('Rotating data file each ' + str(LOGGING_CONFIG['when']))
+msg_logger.info('Rotating data file each ' + str(DATA_LOGGING_CONFIG['when']))
 client = InfluxDBClient(DATABASE['HOST'], DATABASE['PORT'], DATABASE['USER'], DATABASE['PASSWORD'],
                         DATABASE['NAME'])
 sensors = []
