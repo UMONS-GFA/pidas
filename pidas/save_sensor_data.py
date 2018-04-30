@@ -69,7 +69,7 @@ data_logger.addHandler(data_handler)
 
 def exit_threads(signum, frame):
     thread_local_save.stop()
-    thread_remote_save.stop()
+    #thread_remote_save.stop()
     msg_logger.info("Exit({})".format(signum))
     sys.exit(signum)
 
@@ -211,10 +211,10 @@ else:
     sensors = W1ThermSensor.get_available_sensors()
 thread_local_save = ThreadLocalSave(sensors=sensors)
 thread_local_save.setName('localSavingThread')
-thread_remote_save = ThreadRemoteSave(client)
-thread_remote_save.setName('remoteSavingThread')
+#thread_remote_save = ThreadRemoteSave(client)
+#thread_remote_save.setName('remoteSavingThread')
 thread_local_save.start()
-thread_remote_save.start()
+#thread_remote_save.start()
 # wait until threads terminates before stopping main
 thread_local_save.join()
-thread_remote_save.join()
+#thread_remote_save.join()
