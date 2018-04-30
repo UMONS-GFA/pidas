@@ -18,7 +18,7 @@ Add the DATA_HEADER parameter to the settings:
 
     DATA_HEADER = "sensorID,value,timestamp"
     
-Make a copy of **rsync_example.sh** as **rsync.sh** and configure it to meet your needs ::
+Make a copy of **rsync_example.sh** as **rsync.sh** and configure it to meet your needs
 
     USERNAME=''
     SERVER_NAME=''
@@ -30,3 +30,13 @@ Make a copy of **rsync_example.sh** as **rsync.sh** and configure it to meet you
 Configure a cronjob for rsync script
 
     * * * * * /bin/bash /home/pi/pidas/pidas/rsync.sh
+    
+Set a static ip(optional)
+
+On Debian 9 (stretch) edit **/etc/dhcpcd.conf**
+
+    interface eth0
+    static ip_address=192.168.0.10/24
+    static ip6_address=fd51:42f8:caae:d92e::ff/64
+    static routers=192.168.0.1
+    static domain_name_servers=192.168.0.1 8.8.8.8 fd51:42f8:caae:d92e::1
