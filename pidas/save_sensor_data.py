@@ -182,10 +182,12 @@ signal.signal(signal.SIGTERM, exit_threads)
 
 msg_logger.info('_____ Started _____')
 msg_logger.info('saving in' + data_log_filename)
+msg_logger.info('Rotating data file each ' + str(LOGGING_CONFIG['when']))
 client = InfluxDBClient(DATABASE['HOST'], DATABASE['PORT'], DATABASE['USER'], DATABASE['PASSWORD'],
                         DATABASE['NAME'])
 sensors = []
 if SIMULATION_MODE == 1:
+    msg_logger.info("Simulation mode is activated, set SIMULATION_MODE to 0 in production !")
     try:
         last_timestamp = client.query('select "timestamp" from temperatures order by desc limit 1;')
         if not last_timestamp:
