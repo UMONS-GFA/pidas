@@ -30,11 +30,6 @@ else:
 
 lock = RLock()
 
-# TODO: fix logging
-# TODO: choose message debug level
-
-
-
 # Debug logger setup
 msg_logger = logging.getLogger('msg_logger')
 log_path = path.join(PIDAS_DIR, 'logs')
@@ -58,9 +53,6 @@ msg_logger.addHandler(msg_handler)
 if logging_to_console:
     msg_logger.addHandler(logging.StreamHandler())
 
-
-
-
 # Data logger setup
 data_logger = logging.getLogger('data_logger')
 data_path =  path.join(PIDAS_DIR, 'data')
@@ -69,19 +61,14 @@ if not path.exists(data_path):
 data_log_filename = path.join(data_path, DATA_LOGGING_CONFIG['file_name'])
 # Set data logging level and handler
 data_logger.setLevel(logging.INFO)
-#data_handler = CustomTimeRotatingFileHandler(data_log_filename, header=DATA_HEADER)
 data_handler = CustomTimeRotatingFileHandler(data_log_filename, header=DATA_HEADER, when=DATA_LOGGING_CONFIG['when'],
                                              interval=DATA_LOGGING_CONFIG['interval'])
-data_formatter = logging.Formatter(log_format)
-data_formatter.converter = gmtime
-data_formatter.datefmt = '%Y/%m/%d %H:%M:%S UTC'
-data_handler.setFormatter(data_formatter)
-data_handler.suffix = "%Y%m%d_%H%M"
 data_logger.addHandler(data_handler)
+
 
 def exit_threads(signum, frame):
     thread_local_save.stop()
-    thread_remote_save.stop()
+    #thread_remote_save.stop()
     msg_logger.info("Exit({})".format(signum))
     sys.exit(signum)
 
@@ -92,6 +79,7 @@ class ThreadLocalSave(Thread):
         Thread.__init__(self)
         self.sensors = sensors
         self.sleep_time = sleep_time
+        self.event = None
 
     def run(self):
         self.event = Event()
@@ -191,13 +179,14 @@ class ThreadRemoteSave(Thread):
 signal.signal(signal.SIGTERM, exit_threads)
 
 
-
 msg_logger.info('_____ Started _____')
 msg_logger.info('saving in' + data_log_filename)
+msg_logger.info('Rotating data file each ' + str(DATA_LOGGING_CONFIG['when']))
 client = InfluxDBClient(DATABASE['HOST'], DATABASE['PORT'], DATABASE['USER'], DATABASE['PASSWORD'],
                         DATABASE['NAME'])
 sensors = []
 if SIMULATION_MODE == 1:
+    msg_logger.info("Simulation mode is activated, set SIMULATION_MODE to 0 in production !")
     try:
         last_timestamp = client.query('select "timestamp" from temperatures order by desc limit 1;')
         if not last_timestamp:
@@ -223,10 +212,10 @@ else:
     sensors = W1ThermSensor.get_available_sensors()
 thread_local_save = ThreadLocalSave(sensors=sensors)
 thread_local_save.setName('localSavingThread')
-thread_remote_save = ThreadRemoteSave(client)
-thread_remote_save.setName('remoteSavingThread')
+#thread_remote_save = ThreadRemoteSave(client)
+#thread_remote_save.setName('remoteSavingThread')
 thread_local_save.start()
-thread_remote_save.start()
+#thread_remote_save.start()
 # wait until threads terminates before stopping main
 thread_local_save.join()
-thread_remote_save.join()
+#thread_remote_save.join()
