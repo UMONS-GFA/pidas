@@ -30,6 +30,12 @@ Make a copy of **rsync_example.sh** as **rsync.sh** and configure it to meet you
 Configure a cronjob for rsync script
 
     * * * * * /bin/bash /home/pi/pidas/pidas/rsync.sh
+   
+Configure a cronjob to reboot each day if there is some troubles with sensors
+
+    sudo -i
+    crontab -e
+    30 00 * * * /sbin/shutdown -r now
     
 Set a static ip(optional)
 
