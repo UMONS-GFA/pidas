@@ -1,10 +1,12 @@
-PIDAS_DIR = '/home/USERNAME/pidas'
 DATA_FILE = 'data.csv'
-LOG_DIR = 'logs/'
 DATA_HEADER = "sensorID,value,timestamp"
 NB_SENSOR = 8   # Number of fake sensors generated
-MEASURE_INTERVAL = 20
+MEASURE_INTERVAL = 60
+LOG_DIR = 'logs/'
+PIDAS_DIR = '/home/USERNAME/pidas/pidas'
 SIMULATION_MODE = 0
+CSV_HEADER = ["sensorID", "sensorName", "value", "timestamp"]
+
 
 DATABASE = {
     'HOST': '127.0.0.1',
@@ -31,7 +33,7 @@ DATA_LOGGING_CONFIG = {
     'max_bytes': 1048576,
     'backup_count': 1024,
     # Settings period to minute overwrite data_log rotating file !!
-    'when': 'D',
+    'when': 'H',
     'interval': 1,
     'influxdb_logging': True
 }
