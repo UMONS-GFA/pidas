@@ -19,7 +19,7 @@ from pidas.custom_file_handler import CustomTimeRotatingFileHandler
 if SIMULATION_MODE == 1:
     from pidas.fake_sensor import FakeTempSensor, generate_temp_sensor
 else:
-    from w1thermsensor import W1ThermSensor, SensorNotReadyError
+    from w1thermsensor import W1ThermSensor, SensorNotReadyError, NoSensorFoundError
 
 
 debug = LOGGING_CONFIG['debug_mode']
@@ -104,6 +104,8 @@ class ThreadLocalSave(Thread):
                             row = "{},{},{}".format(sensor.id, temperature, timestamp)
                             data_logger.info(row)
                         except SensorNotReadyError as e:
+                            msg_logger.error(e)
+                        except NoSensorFoundError as e:
                             msg_logger.error(e)
                         lock.release()
                 sleep(self.sleep_time)
