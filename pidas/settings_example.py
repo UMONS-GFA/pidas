@@ -6,7 +6,7 @@ LOG_DIR = 'logs/'
 PIDAS_DIR = '/home/USERNAME/pidas/pidas'
 SIMULATION_MODE = 0
 CSV_HEADER = ["sensorID", "sensorName", "value", "timestamp"]
-
+REMOTE_SAVING = True
 
 DATABASE = {
     'HOST': '127.0.0.1',

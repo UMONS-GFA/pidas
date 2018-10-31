@@ -12,7 +12,7 @@ from os import path, makedirs
 from threading import Thread, RLock, Event
 
 from pidas.settings import PIDAS_DIR, DATA_FILE, DATA_HEADER, DATABASE, NB_SENSOR, MEASURE_INTERVAL, \
-    SIMULATION_MODE, LOGGING_CONFIG, DATA_LOGGING_CONFIG
+    SIMULATION_MODE, LOGGING_CONFIG, DATA_LOGGING_CONFIG, REMOTE_SAVING
 
 from pidas.custom_file_handler import CustomTimeRotatingFileHandler
 
@@ -55,7 +55,7 @@ if logging_to_console:
 
 # Data logger setup
 data_logger = logging.getLogger('data_logger')
-data_path =  path.join(PIDAS_DIR, 'data')
+data_path = path.join(PIDAS_DIR, 'data')
 if not path.exists(data_path):
     makedirs(data_path)
 data_log_filename = path.join(data_path, DATA_LOGGING_CONFIG['file_name'])
@@ -68,7 +68,8 @@ data_logger.addHandler(data_handler)
 
 def exit_threads(signum, frame):
     thread_local_save.stop()
-    #thread_remote_save.stop()
+    if REMOTE_SAVING:
+        thread_remote_save.stop()
     msg_logger.info("Exit({})".format(signum))
     sys.exit(signum)
 
@@ -212,12 +213,15 @@ if SIMULATION_MODE == 1:
         msg_logger.error("{}".format(e.content))
 else:
     sensors = W1ThermSensor.get_available_sensors()
+
 thread_local_save = ThreadLocalSave(sensors=sensors)
 thread_local_save.setName('localSavingThread')
-#thread_remote_save = ThreadRemoteSave(client)
-#thread_remote_save.setName('remoteSavingThread')
 thread_local_save.start()
-#thread_remote_save.start()
+
+if REMOTE_SAVING:
+    thread_remote_save = ThreadRemoteSave(client)
+    thread_remote_save.setName('remoteSavingThread')
+    thread_remote_save.start()
+    thread_remote_save.join()
 # wait until threads terminates before stopping main
 thread_local_save.join()
-#thread_remote_save.join()
