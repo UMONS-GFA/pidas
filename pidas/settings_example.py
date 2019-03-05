@@ -13,7 +13,9 @@ DATABASE = {
     'PORT': 8086,
     'USER': '',
     'PASSWORD': '',
-    'NAME': ''
+    'NAME': '',
+    'MEASUREMENT': ''
+
 }
 
 # messages logging configuration
@@ -37,5 +39,16 @@ DATA_LOGGING_CONFIG = {
     'interval': 1,
     'influxdb_logging': True
 }
+
+MQTT_CONFIG = {
+    'server': '',
+    'port': 1883,
+    'keepalive': 60,
+    # WARNING: each client_id must be different !
+    'client_id': '',
+    'bridge_client_id': 'influxdb_bridge',
+    'topic': 'bureau/temperature/'
+}
+
 
 
